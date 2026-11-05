@@ -1,0 +1,12 @@
+node_modules/
+server/node_modules/
+client/node_modules/
+server/dist/
+client/dist/
+.env
+server/.env
+client/.env
+test-results/
+playwright-report/
+.DS_Store
+*.log
