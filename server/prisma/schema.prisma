@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+}
+
+enum ProposalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REVISION_REQUESTED
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  email             String            @unique
+  fullName          String
+  studentCode       String?           @unique
+  passwordHash      String
+  role              Role              @default(STUDENT)
+  createdAt         DateTime          @default(now())
+
+  createdTeams      ProjectTeam[]     @relation("TeamCreator")
+  teamMemberships   TeamMember[]
+  reviewedProposals ProjectProposal[] @relation("ProposalReviewer")
+}
+
+model Course {
+  id          Int           @id @default(autoincrement())
+  code        String        @unique
+  name        String
+  term        String
+  maxTeamSize Int           @default(3)
+  createdAt   DateTime      @default(now())
+
+  teams       ProjectTeam[]
+  members     TeamMember[]
+  milestones  Milestone[]
+}
+
+model ProjectTeam {
+  id          Int                   @id @default(autoincrement())
+  name        String
+  courseId    Int
+  createdById Int
+  createdAt   DateTime              @default(now())
+
+  course      Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy   User                  @relation("TeamCreator", fields: [createdById], references: [id])
+  members     TeamMember[]
+  proposal    ProjectProposal?
+  submissions MilestoneSubmission[]
+
+  @@unique([courseId, name])
+}
+
+model TeamMember {
+  id         Int         @id @default(autoincrement())
+  teamId     Int
+  userId     Int
+  courseId   Int
+  memberRole String      @default("MEMBER")
+  joinedAt   DateTime    @default(now())
+
+  team       ProjectTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@unique([teamId, userId])
+}
+
+model ProjectProposal {
+  id               Int            @id @default(autoincrement())
+  teamId           Int            @unique
+  title            String
+  problemStatement String
+  techStack        String
+  repoUrl          String         @default("")
+  status           ProposalStatus @default(DRAFT)
+  reviewFeedback   String?
+  reviewedById     Int?
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  revisionCount    Int            @default(0)
+  updatedAt        DateTime       @updatedAt
+
+  team             ProjectTeam    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  reviewedBy       User?          @relation("ProposalReviewer", fields: [reviewedById], references: [id])
+}
+
+model Milestone {
+  id            Int                   @id @default(autoincrement())
+  courseId      Int
+  title         String
+  description   String
+  dueDate       DateTime
+  weightPercent Int                   @default(20)
+  createdAt     DateTime              @default(now())
+
+  course        Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions   MilestoneSubmission[]
+}
+
+model MilestoneSubmission {
+  id          Int         @id @default(autoincrement())
+  milestoneId Int
+  teamId      Int
+  artifactUrl String
+  releaseTag  String
+  notes       String      @default("")
+  score       Int?
+  feedback    String?
+  submittedAt DateTime    @default(now())
+
+  milestone   Milestone   @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  team        ProjectTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([milestoneId, teamId])
+}

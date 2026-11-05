@@ -1,0 +1,15 @@
+{
+  "name": "course-pms",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "test": "npm --prefix server run test && npm --prefix client run test && npx playwright test",
+    "test:server": "npm --prefix server run test",
+    "test:client": "npm --prefix client run test",
+    "test:e2e": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}
